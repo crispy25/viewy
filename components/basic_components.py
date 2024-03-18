@@ -1,7 +1,5 @@
-from tkinter import font, ttk, StringVar
+from tkinter import font, ttk, StringVar, Text, END
 from tkinterweb import HtmlFrame
-import tkinter
-
 
 class VLabel(ttk.Label):
     def __init__(self, master, key, value, link, **kw):
@@ -23,6 +21,21 @@ class VConfig(ttk.Frame):
         self.version = ttk.Label(master=self, text='    v0.1    ')
         self.version.pack(side='right')
 
+        s = StringVar()
+        self.font_choice = ttk.Combobox(self, width=20, height=10, textvariable=s, state='readonly')
+        self.font_choice["values"] = font.families()
+        self.font_choice.pack(side='right')
+        self.font_choice.current(0)
+
+        def change_font() -> None:
+            self.master.custom_font.configure(family=s.get())
+            if self.master.main_frame.selection:
+                new_font = self.master.custom_font.copy()
+                new_font.config(underline=True)
+                self.master.main_frame.selection.config(font=new_font)
+
+        self.font_choice.bind("<<ComboboxSelected>>", lambda event: change_font())
+
         self.save_button = ttk.Button(master=self, text='Save', command=master.config_text.save)
         self.save_button_showing = False
 
@@ -35,14 +48,14 @@ class VConfig(ttk.Frame):
         else:
             self.save_button.forget()
 
-class VConfigText(tkinter.Text):
-    def __init__(self, master, bg, fg, font, padx, borderwidth, border, selectforeground):
-        super().__init__(master, fg=fg, bg=bg, font=font, padx=padx, borderwidth=borderwidth, border=border, selectforeground=selectforeground)
+class VConfigText(Text):
+    def __init__(self, master, font, bg='#0d0a03', fg='#10e84b', padx=40, pady=40, borderwidth=3, border=4, selectforeground='#e0ffe3', insertbackground="#00db15", insertwidth=2):
+        super().__init__(master, fg=fg, bg=bg, font=font, padx=padx, borderwidth=borderwidth, border=border, selectforeground=selectforeground, insertbackground=insertbackground, insertwidth=insertwidth)
 
         self.text = ''
-        with open("vconfig_file.txt") as file:
+        with open("utils/vconfig_file.txt") as file:
             self.text = file.read()
-        self.insert(tkinter.END, self.text)
+        self.insert(END, self.text)
         self.text_showing = False
 
     def show_config_text(self) -> None:
@@ -59,7 +72,7 @@ class VConfigText(tkinter.Text):
         self.text = self.get("1.0",'end-1c')
         self.master.update_main_frame(self.text)
 
-        with open("vconfig_file.txt", "w+") as file:
+        with open("utils/vconfig_file.txt", "w+") as file:
             file.write(self.text)
 
 class VMainFrame(ttk.Frame):
@@ -74,22 +87,33 @@ class VMainFrame(ttk.Frame):
         self.web_frame = HtmlFrame(self, messages_enabled = False)
         self.web_frame.pack(side='left', fill='both', expand=True, padx=100, pady=40)
 
-        self.selection: VLabel = None
+        self.selection = None
         self.labels = {}
-        
     
     def update(self, labels: dict) -> None:
+        key = None
+        if self.selection:
+            key = self.selection.key
+
+        self.selection = None
+
         for label in self.labels.values():
             label.destroy()
 
         [label.pack(anchor='w') for label in labels.values()]
         self.labels = labels
 
+        if key:
+            self.select(key)
+
     def select(self, key) -> None:
         if key in self.labels.keys():
             if self.selection:
-                self.selection.config(font = ('Comic Sans', 20, 'normal'))
+                self.selection.config(font=self.master.custom_font)
+
             self.selection = self.labels.get(key)
-            self.selection.config(font = ('Comic Sans', 20, 'underline'))
+            new_font = self.master.custom_font.copy()
+            new_font.config(underline=True)
+            self.selection.config(font=new_font)
             self.web_frame.load_website(self.selection.link)
             self.web_frame.pack(side='left', fill='both', expand=True, padx=100, pady=40)
