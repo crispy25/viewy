@@ -1,4 +1,4 @@
-from tkinter import ttk, Tk
+from tkinter import ttk, Tk, PhotoImage
 from tkinter import font
 import ctypes
 import sys
@@ -20,6 +20,7 @@ class Viewy(Tk):
         self.state('zoomed')
         self.config(bg='black')
         self.minsize(width=1000, height=800)
+        self.wm_iconphoto(False, PhotoImage(file='icon.png'))
 
         self.custom_font = font.Font(family='Comic Sans', size=20)
         self.main_frame = VMainFrame(master=self)
